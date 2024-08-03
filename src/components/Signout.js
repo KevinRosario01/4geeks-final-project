@@ -12,8 +12,7 @@ export function Signout({ user }) {
   };
 
   return (
-    <div className="flex flex-row gap-2">
-      {user.email}
+    <div className="flex flex-row gap-2 text-gray-900">{ user.email }
       <button className="text-sky-500 hover:underline" onClick={handleSignOut}>
         Sign out
       </button>

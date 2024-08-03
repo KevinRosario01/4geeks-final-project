@@ -8,5 +8,5 @@ export default function AddPerson() {
     await supabase.from("persons").insert([data]);
     redirect("/persons");
   };
-  return <PersonForm onSave={handleCreatePerson} />;
+  return <PersonForm onSave={handleCreatePerson}/>;
 }

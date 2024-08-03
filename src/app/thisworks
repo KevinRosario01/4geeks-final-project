@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { useForm } from "react-hook-form";
+import Login from "@/components/Login";
 import LoginForm from "@/components/LoginForm";
 
 export default function Home() {
@@ -29,7 +31,7 @@ export default function Home() {
       return error;
     } else {
       setUser(data.user);
-      return error;
+      return null;
     }
   };
 
@@ -45,6 +47,7 @@ export default function Home() {
   const handleModalClose = () => {
     setIsLoginOpen(false);
   };
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="bg-blue-900 text-white">
@@ -71,10 +74,7 @@ export default function Home() {
                 >
                   Login
                 </button>
-                <a
-                  href="#"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
+                <a href="#" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                   Sign Up
                 </a>
               </>
@@ -86,12 +86,9 @@ export default function Home() {
       <main className="flex-grow">
         <section className="bg-blue-200 py-12">
           <div className="container mx-auto text-center">
-            <h1 className="text-4xl font-bold mb-4">
-              Rate and Review Your Professors
-            </h1>
+            <h1 className="text-4xl font-bold mb-4">Rate and Review Your Professors</h1>
             <p className="text-xl mb-8">
-              Find and review your professors to help others make informed
-              decisions.
+              Find and review your professors to help others make informed decisions.
             </p>
             <div className="flex justify-center">
               <input
@@ -108,38 +105,27 @@ export default function Home() {
 
         <section className="py-12">
           <div className="container mx-auto">
-            <h2 className="text-3xl font-bold mb-6 text-center">
-              Featured Professors
-            </h2>
+            <h2 className="text-3xl font-bold mb-6 text-center">Featured Professors</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-xl font-semibold mb-2">
-                  Professor John Doe
-                </h3>
+                <h3 className="text-xl font-semibold mb-2">Professor John Doe</h3>
                 <p className="text-gray-700">Department of Mathematics</p>
                 <p className="mt-4 text-gray-600">
-                  "Professor Doe is an excellent teacher who makes complex
-                  topics easy to understand."
+                  "Professor Doe is an excellent teacher who makes complex topics easy to understand."
                 </p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-xl font-semibold mb-2">
-                  Professor Jane Smith
-                </h3>
+                <h3 className="text-xl font-semibold mb-2">Professor Jane Smith</h3>
                 <p className="text-gray-700">Department of History</p>
                 <p className="mt-4 text-gray-600">
-                  "Professor Smith has a passion for history that makes every
-                  class engaging."
+                  "Professor Smith has a passion for history that makes every class engaging."
                 </p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-xl font-semibold mb-2">
-                  Professor Alice Johnson
-                </h3>
+                <h3 className="text-xl font-semibold mb-2">Professor Alice Johnson</h3>
                 <p className="text-gray-700">Department of Chemistry</p>
                 <p className="mt-4 text-gray-600">
-                  "Professor Johnson's lectures are thorough and
-                  well-organized."
+                  "Professor Johnson's lectures are thorough and well-organized."
                 </p>
               </div>
             </div>
@@ -154,7 +140,10 @@ export default function Home() {
       </footer>
 
       {isLoginOpen && (
-        <LoginForm onLogin={handleLogin} onClose={handleModalClose} />
+        <LoginForm
+          onLogin={handleLogin}
+          onClose={handleModalClose}
+        />
       )}
     </div>
   );

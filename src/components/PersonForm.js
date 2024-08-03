@@ -4,10 +4,12 @@ import { useForm } from "react-hook-form";
 import { PersonSchema } from "@/services/PersonSchema";
 import { useEffect } from "react";
 import { Input } from "./Input";
+import { Loading } from "./Loading";
 
-export function PersonForm({ onSave }) {
+export function PersonForm({ onSave, isSaving, data }) {
   const form = useForm({
     resolver: zodResolver(PersonSchema),
+    defaultValues: data,
   });
 
   return (

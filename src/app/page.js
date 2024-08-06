@@ -3,33 +3,92 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import LoginForm from "@/components/LoginForm";
+import SignUpForm from "@/components/SignUpForm";
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
-      setUser(data?.user);
+      if (data?.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('users')
+          .select('first_name')
+          .eq('email', data.user.email)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching profile:", profileError.message);
+        } else {
+          setUser({ ...data.user, first_name: profileData.first_name });
+        }
+      }
     };
 
     fetchUser();
   }, [supabase]);
 
   const handleLogin = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
-      console.error("Error logging in:", error);
-      return error;
+    if (signInError) {
+      console.error("Error logging in:", signInError.message);
+      return signInError.message;
     } else {
-      setUser(data.user);
-      return error;
+      const { data: profileData, error: profileError } = await supabase
+        .from('users')
+        .select('first_name')
+        .eq('email', email)
+        .single();
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError.message);
+        return profileError.message;
+      } else {
+        setUser({ ...signInData.user, first_name: profileData.first_name });
+        return null;
+      }
+    }
+  };
+
+  const handleSignUp = async (firstName, lastName, schoolName, email, password) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          school_name: schoolName,
+        },
+      },
+    });
+
+    if (error) {
+      console.error("Error signing up:", error.message);
+      return error.message; // Return the error message
+    } else {
+      // Fetch the user's profile information immediately after sign-up
+      const { data: profileData, error: profileError } = await supabase
+        .from('users')
+        .select('first_name')
+        .eq('email', email)
+        .single();
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError.message);
+      } else {
+        setUser({ ...data.user, first_name: profileData.first_name });
+      }
+
+      return null;
     }
   };
 
@@ -44,7 +103,19 @@ export default function Home() {
 
   const handleModalClose = () => {
     setIsLoginOpen(false);
+    setIsSignUpOpen(false);
   };
+
+  const switchToSignUp = () => {
+    setIsLoginOpen(false);
+    setIsSignUpOpen(true);
+  };
+
+  const switchToLogin = () => {
+    setIsSignUpOpen(false);
+    setIsLoginOpen(true);
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="bg-blue-900 text-white">
@@ -55,7 +126,7 @@ export default function Home() {
           <div className="flex space-x-4">
             {user ? (
               <>
-                <span>Welcome, {user.email}</span>
+                <span>Welcome, {user.first_name}</span>
                 <button
                   onClick={handleLogout}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
@@ -71,12 +142,12 @@ export default function Home() {
                 >
                   Login
                 </button>
-                <a
-                  href="#"
+                <button
+                  onClick={() => setIsSignUpOpen(true)}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
                   Sign Up
-                </a>
+                </button>
               </>
             )}
           </div>
@@ -154,37 +225,20 @@ export default function Home() {
       </footer>
 
       {isLoginOpen && (
-        <LoginForm onLogin={handleLogin} onClose={handleModalClose} />
+        <LoginForm
+          onLogin={handleLogin}
+          onClose={handleModalClose}
+          onSwitchToSignUp={switchToSignUp}
+        />
+      )}
+
+      {isSignUpOpen && (
+        <SignUpForm
+          onSignUp={handleSignUp}
+          onClose={handleModalClose}
+          onSwitchToLogin={switchToLogin}
+        />
       )}
     </div>
   );
 }
-
-// Render nothing or a placeholder until the user data is loaded
-//   return (
-//     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-6">
-//       <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
-//         <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome</h1>
-//         <div className="flex flex-row text-lg text-gray-800"> Hello,  &nbsp; {data?.user ? <Signout user={data.user} /> : null}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-/*export default async function Home() {
-  const supabase = createClient();
-  const { data } = await supabase.auth.getUser();
-  let { data: branches, error } = await supabase.from("bracnhes").select("*");
-
-  return (
-    <div className="container mx-auto text-xl">
-      Hello - {data?.user.email}
-      <ul>
-        {branches?.map((branch) => (
-          <li>{branch.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}*/

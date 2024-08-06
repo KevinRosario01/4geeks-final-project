@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
-const LoginForm = ({ onLogin, onClose }) => {
+const LoginForm = ({ onLogin, onClose, onSwitchToSignUp }) => {
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
   const [loginError, setLoginError] = useState("");
@@ -30,14 +30,16 @@ const LoginForm = ({ onLogin, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
-        <h2 className="text-black font-extrabold text-4xl mb-4 text-center">Login</h2>
+        <h2 className="text-black font-extrabold text-4xl mb-4 text-center">
+          Login
+        </h2>
 
         <form onSubmit={handleSubmit}>
-        {loginError && (
-          <p className="text-red-500 font-extrabold mb-4 text-center">
-            {loginError}
-          </p>
-        )}
+          {loginError && (
+            <p className="text-red-500 font-extrabold mb-4 text-center">
+              {loginError}
+            </p>
+          )}
           <div className="mb-4">
             <label htmlFor="email" className="block text-gray-700 mb-2">
               Email
@@ -76,12 +78,23 @@ const LoginForm = ({ onLogin, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="text-gray-600 hover:text-gray-800"
+              className="text-white-600 hover:text-gray-800"
             >
               Close
             </button>
           </div>
         </form>
+        <div className="text-center mt-4">
+          <p className="text-gray-600">
+            Don't have an account?{" "}
+            <span
+              className="text-blue-600 font-bold cursor-pointer hover:underline"
+              onClick={onSwitchToSignUp}
+            >
+              Sign up
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   );

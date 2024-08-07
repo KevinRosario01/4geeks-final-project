@@ -1,60 +1,65 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { createClient } from "@/utils/supabase/client";
 import LoginForm from "@/components/LoginForm";
 import SignUpForm from "@/components/SignUpForm";
+
+const supabase = createClient();
+const SearchComponent = dynamic(() => import("@/components/SearchComponent"), { ssr: false });
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authData?.user) {
         const { data: profileData, error: profileError } = await supabase
           .from('users')
-          .select('first_name')
-          .eq('email', data.user.email)
+          .select('first_name, role')
+          .eq('email', authData.user.email)
           .single();
 
         if (profileError) {
           console.error("Error fetching profile:", profileError.message);
         } else {
-          setUser({ ...data.user, first_name: profileData.first_name });
+          setUser({ ...authData.user, first_name: profileData.first_name, role: profileData.role });
         }
       }
     };
 
     fetchUser();
-  }, [supabase]);
+
+    // Listen for auth state changes and update user state
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        fetchUser();
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      authListener.subscription?.unsubscribe();
+    };
+  }, []);
 
   const handleLogin = async (email, password) => {
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (signInError) {
-      console.error("Error logging in:", signInError.message);
-      return signInError.message;
+    if (error) {
+      console.error("Error logging in:", error);
+      return error;
     } else {
-      const { data: profileData, error: profileError } = await supabase
-        .from('users')
-        .select('first_name')
-        .eq('email', email)
-        .single();
-
-      if (profileError) {
-        console.error("Error fetching profile:", profileError.message);
-        return profileError.message;
-      } else {
-        setUser({ ...signInData.user, first_name: profileData.first_name });
-        return null;
-      }
+      setUser(data.user);
+      return error;
     }
   };
 
@@ -72,22 +77,10 @@ export default function Home() {
     });
 
     if (error) {
-      console.error("Error signing up:", error.message);
-      return error.message; // Return the error message
+      console.error("Error signing up:", error);
+      return error;
     } else {
-      // Fetch the user's profile information immediately after sign-up
-      const { data: profileData, error: profileError } = await supabase
-        .from('users')
-        .select('first_name')
-        .eq('email', email)
-        .single();
-
-      if (profileError) {
-        console.error("Error fetching profile:", profileError.message);
-      } else {
-        setUser({ ...data.user, first_name: profileData.first_name });
-      }
-
+      setUser(data.user);
       return null;
     }
   };
@@ -106,16 +99,6 @@ export default function Home() {
     setIsSignUpOpen(false);
   };
 
-  const switchToSignUp = () => {
-    setIsLoginOpen(false);
-    setIsSignUpOpen(true);
-  };
-
-  const switchToLogin = () => {
-    setIsSignUpOpen(false);
-    setIsLoginOpen(true);
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
       <header className="bg-blue-900 text-white">
@@ -127,6 +110,11 @@ export default function Home() {
             {user ? (
               <>
                 <span>Welcome, {user.first_name}</span>
+                {user.role === 'admin' && (
+                  <a href="/admin" className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                    Admin Menu
+                  </a>
+                )}
                 <button
                   onClick={handleLogout}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
@@ -157,60 +145,37 @@ export default function Home() {
       <main className="flex-grow">
         <section className="bg-blue-200 py-12">
           <div className="container mx-auto text-center">
-            <h1 className="text-4xl font-bold mb-4">
-              Rate and Review Your Professors
-            </h1>
+            <h1 className="text-4xl font-bold mb-4">Rate and Review Your Professors</h1>
             <p className="text-xl mb-8">
-              Find and review your professors to help others make informed
-              decisions.
+              Find and review your professors to help others make informed decisions.
             </p>
-            <div className="flex justify-center">
-              <input
-                type="text"
-                placeholder="Search for a professor..."
-                className="p-2 w-full md:w-1/2 lg:w-1/3 border border-gray-300 rounded-lg"
-              />
-              <button className="ml-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Search
-              </button>
-            </div>
+            <SearchComponent />
           </div>
         </section>
 
         <section className="py-12">
           <div className="container mx-auto">
-            <h2 className="text-3xl font-bold mb-6 text-center">
-              Featured Professors
-            </h2>
+            <h2 className="text-3xl font-bold mb-6 text-center">Featured Professors</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-xl font-semibold mb-2">
-                  Professor John Doe
-                </h3>
+                <h3 className="text-xl font-semibold mb-2">Professor John Doe</h3>
                 <p className="text-gray-700">Department of Mathematics</p>
                 <p className="mt-4 text-gray-600">
-                  "Professor Doe is an excellent teacher who makes complex
-                  topics easy to understand."
+                  "Professor Doe is an excellent teacher who makes complex topics easy to understand."
                 </p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-xl font-semibold mb-2">
-                  Professor Jane Smith
-                </h3>
+                <h3 className="text-xl font-semibold mb-2">Professor Jane Smith</h3>
                 <p className="text-gray-700">Department of History</p>
                 <p className="mt-4 text-gray-600">
-                  "Professor Smith has a passion for history that makes every
-                  class engaging."
+                  "Professor Smith has a passion for history that makes every class engaging."
                 </p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-xl font-semibold mb-2">
-                  Professor Alice Johnson
-                </h3>
+                <h3 className="text-xl font-semibold mb-2">Professor Alice Johnson</h3>
                 <p className="text-gray-700">Department of Chemistry</p>
                 <p className="mt-4 text-gray-600">
-                  "Professor Johnson's lectures are thorough and
-                  well-organized."
+                  "Professor Johnson's lectures are thorough and well-organized."
                 </p>
               </div>
             </div>
@@ -225,19 +190,11 @@ export default function Home() {
       </footer>
 
       {isLoginOpen && (
-        <LoginForm
-          onLogin={handleLogin}
-          onClose={handleModalClose}
-          onSwitchToSignUp={switchToSignUp}
-        />
+        <LoginForm onLogin={handleLogin} onClose={handleModalClose} />
       )}
 
       {isSignUpOpen && (
-        <SignUpForm
-          onSignUp={handleSignUp}
-          onClose={handleModalClose}
-          onSwitchToLogin={switchToLogin}
-        />
+        <SignUpForm onSignUp={handleSignUp} onClose={handleModalClose} />
       )}
     </div>
   );

@@ -7,7 +7,7 @@ import LoginForm from "@/components/LoginForm";
 import SignUpForm from "@/components/SignUpForm";
 
 const supabase = createClient();
-const SearchComponent = dynamic(() => import("@/components/SearchComponent"), { ssr: false });
+const SearchForm = dynamic(() => import("@/components/SearchForm"), { ssr: false });
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -149,7 +149,7 @@ export default function Home() {
             <p className="text-xl mb-8">
               Find and review your professors to help others make informed decisions.
             </p>
-            <SearchComponent />
+            <SearchForm />
           </div>
         </section>
 

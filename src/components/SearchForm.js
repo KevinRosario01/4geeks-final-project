@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
 import { createClient } from "@/utils/supabase/client";
+import { FaUniversity } from "react-icons/fa";
 
 const supabase = createClient();
 
-export default function SearchComponent() {
+export default function SearchForm() {
   const router = useRouter();
   const [schoolName, setSchoolName] = useState("");
   const [professorName, setProfessorName] = useState("");
@@ -20,7 +20,7 @@ export default function SearchComponent() {
   const searchUniversities = async (name) => {
     const { data, error } = await supabase
       .from("universities")
-      .select("university_id, name")
+      .select("university_id, name, location")
       .ilike("name", `%${name}%`);
 
     if (error) {
@@ -72,18 +72,18 @@ export default function SearchComponent() {
   };
 
   return (
-    <div className="flex justify-center relative">
+    <div className="flex flex-col items-center relative w-full">
       {!selectedUniversity ? (
         <>
           <input
             type="text"
-            placeholder="Search for a university..."
+            placeholder="Name of School"
             className="p-2 w-full md:w-1/2 lg:w-1/3 border border-gray-300 rounded-lg"
             value={schoolName}
             onChange={handleSchoolNameChange}
           />
           {universitySuggestions.length > 0 && (
-            <ul className="absolute bg-white border border-gray-300 mt-2 rounded-lg shadow-lg w-full md:w-1/2 lg:w-1/3 max-h-60 overflow-y-auto">
+            <ul className=" bg-white border border-gray-300 mt-2 rounded-lg shadow-lg w-full md:w-1/2 lg:w-1/3 max-h-60 overflow-y-auto z-10">
               {universitySuggestions.map((university) => (
                 <li
                   key={university.university_id}
@@ -91,9 +91,13 @@ export default function SearchComponent() {
                     setSelectedUniversity(university);
                     setUniversitySuggestions([]);
                   }}
-                  className="cursor-pointer hover:bg-gray-200 p-2"
+                  className="flex items-center cursor-pointer hover:bg-gray-200 p-2"
                 >
-                  {university.name}
+                  <FaUniversity className="mr-2 text-black" style={{ fill: 'black' }}/>
+                  <div>
+                    <div className="font-bold text-black">{university.name}</div>
+                    <div className="text-sm text-gray-500 text-left">{university.location}</div>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -109,7 +113,7 @@ export default function SearchComponent() {
             onChange={handleProfessorNameChange}
           />
           {professorSuggestions.length > 0 && (
-            <ul className="absolute bg-white border border-gray-300 mt-2 rounded-lg shadow-lg w-full md:w-1/2 lg:w-1/3 max-h-60 overflow-y-auto">
+            <ul className="bg-white border border-gray-300 mt-2 rounded-lg shadow-lg w-full md:w-1/2 lg:w-1/3 max-h-60 overflow-y-auto z-10">
               {professorSuggestions.map((professor) => (
                 <li
                   key={professor.professor_id}
@@ -118,7 +122,7 @@ export default function SearchComponent() {
                     setSelectedProfessor(professor);
                     setProfessorSuggestions([]);
                   }}
-                  className="cursor-pointer hover:bg-gray-200 p-2"
+                  className="cursor-pointer hover:bg-gray-200 p-2 text-black"
                 >
                   {professor.first_name}
                 </li>
@@ -130,7 +134,7 @@ export default function SearchComponent() {
       {selectedProfessor && (
         <button
           onClick={handleProfessorSearch}
-          className="ml-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Search
         </button>

@@ -1,3 +1,8 @@
+// Update with Zod for form validation
+// add school page
+// add professor page
+// add professor raiting page
+
 "use client";
 
 import { useState, useEffect } from "react";

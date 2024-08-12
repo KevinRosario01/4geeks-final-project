@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export async function updateSession(request) {
   let supabaseResponse = NextResponse.next({
-    request,
+    request:{ headers:request.headers }
   })
 
   const supabase = createServerClient(
@@ -28,7 +28,8 @@ export async function updateSession(request) {
   )
 
   // refreshing the auth token
-  await supabase.auth.getUser()
+  //await supabase.auth.getUser()
 
-  return supabaseResponse
+  //return supabaseResponse
+  return { response:supabaseResponse, supabase}
 }

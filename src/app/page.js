@@ -1,13 +1,10 @@
-// Update with Zod for form validation
-// add school page
-// add professor page
-// add professor raiting page
-
 "use client";
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { createClient } from "@/utils/supabase/client";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import LoginForm from "@/components/LoginForm";
 import SignUpForm from "@/components/SignUpForm";
 
@@ -39,7 +36,6 @@ export default function Home() {
 
     fetchUser();
 
-    // Listen for auth state changes and update user state
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         fetchUser();
@@ -106,46 +102,12 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="bg-blue-900 text-white">
-        <div className="container mx-auto flex items-center justify-between p-4">
-          <a href="#" className="text-2xl font-bold">
-            RateMyProfessor
-          </a>
-          <div className="flex space-x-4">
-            {user ? (
-              <>
-                <span>Welcome, {user.first_name}</span>
-                {user.role === 'admin' && (
-                  <a href="/admin" className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
-                    Admin Menu
-                  </a>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => setIsLoginOpen(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => setIsSignUpOpen(true)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Sign Up
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <Header
+        user={user}
+        handleLogout={handleLogout}
+        openLoginModal={() => setIsLoginOpen(true)}
+        openSignUpModal={() => setIsSignUpOpen(true)}
+      />
 
       <main className="flex-grow">
         <section className="bg-blue-200 py-12">
@@ -188,11 +150,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="bg-gray-800 text-white py-6">
-        <div className="container mx-auto text-center">
-          <p>&copy; 2024 RateMyProfessor Clone. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
 
       {isLoginOpen && (
         <LoginForm onLogin={handleLogin} onClose={handleModalClose} />

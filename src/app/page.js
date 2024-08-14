@@ -5,16 +5,12 @@ import dynamic from "next/dynamic";
 import { createClient } from "@/utils/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import LoginForm from "@/components/LoginForm";
-import SignUpForm from "@/components/SignUpForm";
 
 const supabase = createClient();
 const SearchForm = dynamic(() => import("@/components/SearchForm"), { ssr: false });
 
 export default function Home() {
   const [user, setUser] = useState(null);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -49,65 +45,9 @@ export default function Home() {
     };
   }, []);
 
-  const handleLogin = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      console.error("Error logging in:", error);
-      return error;
-    } else {
-      setUser(data.user);
-      return error;
-    }
-  };
-
-  const handleSignUp = async (firstName, lastName, schoolName, email, password) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          school_name: schoolName,
-        },
-      },
-    });
-
-    if (error) {
-      console.error("Error signing up:", error);
-      return error;
-    } else {
-      setUser(data.user);
-      return null;
-    }
-  };
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Error logging out:", error);
-    } else {
-      setUser(null);
-    }
-  };
-
-  const handleModalClose = () => {
-    setIsLoginOpen(false);
-    setIsSignUpOpen(false);
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
-      <Header
-        user={user}
-        handleLogout={handleLogout}
-        openLoginModal={() => setIsLoginOpen(true)}
-        openSignUpModal={() => setIsSignUpOpen(true)}
-      />
+      <Header user={user} setUser={setUser} />
 
       <main className="flex-grow">
         <section className="bg-blue-200 py-12">
@@ -151,14 +91,6 @@ export default function Home() {
       </main>
 
       <Footer />
-
-      {isLoginOpen && (
-        <LoginForm onLogin={handleLogin} onClose={handleModalClose} />
-      )}
-
-      {isSignUpOpen && (
-        <SignUpForm onSignUp={handleSignUp} onClose={handleModalClose} />
-      )}
     </div>
   );
 }

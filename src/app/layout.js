@@ -15,7 +15,6 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <AuthProvider>
           <div className="w-full h-screen">
-            <div></div>
             {children}
           </div>
         </AuthProvider>

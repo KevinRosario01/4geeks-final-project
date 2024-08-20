@@ -11,9 +11,27 @@ export default function ProfessorPage({ params: { id } }) {
   const [professor, setProfessor] = useState(null);
   const [universityName, setUniversityName] = useState("");
   const [reviews, setReviews] = useState([]);
+  const [filteredReviews, setFilteredReviews] = useState([]); // State for filtered reviews
   const [courses, setCourses] = useState({}); // Store course data in an object keyed by course_id
+  const [tags, setTags] = useState([]); // Store tags data
   const [loading, setLoading] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState("All courses"); // State for selected course
+  const [overallRating, setOverallRating] = useState(null);
+  const [difficultyLevel, setDifficultyLevel] = useState(null);
+  const [wouldTakeAgainPercentage, setWouldTakeAgainPercentage] =
+    useState(null);
   const router = useRouter();
+
+  // Parse tags safely
+  function parseTags(tags) {
+    if (!tags) return [];
+    try {
+      return typeof tags === "string" ? JSON.parse(tags) : tags;
+    } catch (e) {
+      console.error("Error parsing tags:", e);
+      return [];
+    }
+  }
 
   useEffect(() => {
     const fetchProfessorData = async () => {
@@ -50,17 +68,69 @@ export default function ProfessorPage({ params: { id } }) {
         const { data: reviewsData, error: reviewsError } = await supabase
           .from("reviews")
           .select("*")
-          .eq("professor_id", id);
+          .eq("professor_id", id)
+          .order("created_at", { ascending: false }); // Sort reviews by date in descending order
 
         if (reviewsError) {
           console.error("Error fetching reviews:", reviewsError);
         } else {
-          setReviews(reviewsData);
+          // Parse tags in each review
+          const parsedReviews = reviewsData.map((review) => ({
+            ...review,
+            tags: parseTags(review.tags),
+          }));
+          setReviews(parsedReviews);
+          setFilteredReviews(parsedReviews); // Set initial filtered reviews
+
+          // Calculate aggregate values
+          const totalReviews = parsedReviews.length;
+          if (totalReviews > 0) {
+            const totalRating = parsedReviews.reduce(
+              (sum, review) => sum + (review.rating || 0),
+              0
+            );
+            const totalDifficulty = parsedReviews.reduce(
+              (sum, review) => sum + (review.difficulty || 0),
+              0
+            );
+            const totalWouldTakeAgain = parsedReviews.reduce(
+              (sum, review) => sum + (review.would_take_again ? 1 : 0),
+              0
+            );
+
+            setOverallRating((totalRating / totalReviews).toFixed(1));
+            setDifficultyLevel((totalDifficulty / totalReviews).toFixed(1));
+            setWouldTakeAgainPercentage(
+              ((totalWouldTakeAgain / totalReviews) * 100).toFixed(0)
+            );
+          } else {
+            setOverallRating("N/A");
+            setDifficultyLevel("N/A");
+            setWouldTakeAgainPercentage("N/A");
+          }
+
+          // Extract and count tags from reviews
+          const tagCounts = {};
+          parsedReviews.forEach((review) => {
+            if (review.tags) {
+              review.tags.forEach((tag) => {
+                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+              });
+            }
+          });
+
+          // Sort tags by frequency and take the top ones
+          const sortedTags = Object.entries(tagCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map((tag) => tag[0]);
+
+          setTags(sortedTags);
 
           // Fetch related courses based on course_id in reviews
-          const courseIds = reviewsData.map(review => review.course_id);
+          const courseIds = parsedReviews.map((review) => review.course_id);
           const { data: coursesData, error: coursesError } = await supabase
-            .from("courses") // Update the table name to 'courses'
+            .from("courses")
             .select("*")
             .in("course_id", courseIds);
 
@@ -68,7 +138,7 @@ export default function ProfessorPage({ params: { id } }) {
             console.error("Error fetching courses:", coursesError);
           } else {
             const coursesMap = {};
-            coursesData.forEach(course => {
+            coursesData.forEach((course) => {
               coursesMap[course.course_id] = course;
             });
             setCourses(coursesMap);
@@ -78,17 +148,29 @@ export default function ProfessorPage({ params: { id } }) {
 
       setLoading(false);
     };
-  
 
     fetchProfessorData();
   }, [id]);
+
+  // Handle course selection change
+  useEffect(() => {
+    if (selectedCourse === "All courses") {
+      setFilteredReviews(reviews);
+    } else {
+      setFilteredReviews(
+        reviews.filter(
+          (review) => courses[review.course_id]?.course_code === selectedCourse
+        )
+      );
+    }
+  }, [selectedCourse, reviews, courses]);
 
   if (loading || !professor) {
     return <div>Loading...</div>;
   }
 
   function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const options = { year: "numeric", month: "short", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined, options);
   }
 
@@ -108,17 +190,18 @@ export default function ProfessorPage({ params: { id } }) {
                 {universityName} {/* Display university name */}
               </p>
               <p className="text-2xl font-bold text-green-600">
-                {professor.overall_rating}/5
+                {overallRating}/5 {/* Display aggregated overall rating */}
               </p>
               <p className="text-gray-600">{reviews.length} reviews</p>
             </div>
             <div className="text-center">
               <p className="text-xl font-bold text-green-600">
-                {professor.would_take_again_percentage}%
+                {wouldTakeAgainPercentage}%{" "}
+                {/* Display aggregated would take again percentage */}
               </p>
               <p className="text-gray-600">Would take again</p>
               <p className="text-xl font-bold text-red-600">
-                {professor.difficulty_level}
+                {difficultyLevel} {/* Display aggregated difficulty level */}
               </p>
               <p className="text-gray-600">Level of difficulty</p>
             </div>
@@ -136,24 +219,29 @@ export default function ProfessorPage({ params: { id } }) {
               <h2 className="text-2xl font-bold mb-4 text-black">
                 Professor's Top Tags
               </h2>
-              {/* Placeholder for tags */}
+              {/* Display top tags from the reviews table */}
               <div className="flex flex-wrap">
-                {["Caring", "Gives Good Feedback", "Respected"].map(
-                  (tag, index) => (
+                {tags.length > 0 ? (
+                  tags.map((tag, index) => (
                     <span
                       key={index}
                       className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg mr-2 mb-2"
                     >
                       {tag}
                     </span>
-                  )
+                  ))
+                ) : (
+                  <p className="text-gray-600"></p>
                 )}
               </div>
             </div>
           </div>
 
           <div className="flex justify-between items-center mt-6">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              onClick={() => router.push(`/add/professor-raiting/${id}`)} // Updated to navigate to the rating page
+            >
               Rate
             </button>
             <button className="px-4 py-2 border border-gray-600 text-gray-600 bg-white rounded-lg hover:bg-gray-200">
@@ -171,10 +259,16 @@ export default function ProfessorPage({ params: { id } }) {
               Student Reviews
             </h2>
             <div className="flex justify-between items-center">
-              <p className="text-lg font-bold text-black">17 Student Reviews</p>
-              <select className="px-4 py-2 border border-gray-300 rounded-lg text-black bg-white">
+              <p className="text-lg font-bold text-black">
+                {filteredReviews.length} Student Reviews
+              </p>
+              <select
+                className="px-4 py-2 border border-gray-300 rounded-lg text-black bg-white"
+                value={selectedCourse}
+                onChange={(e) => setSelectedCourse(e.target.value)}
+              >
                 <option className="text-black">All courses</option>
-                {Object.values(courses).map(course => (
+                {Object.values(courses).map((course) => (
                   <option key={course.course_id} className="text-black">
                     {course.course_code}
                   </option>
@@ -182,8 +276,8 @@ export default function ProfessorPage({ params: { id } }) {
               </select>
             </div>
 
-            {reviews.length > 0 ? (
-              reviews.map((review, index) => (
+            {filteredReviews.length > 0 ? (
+              filteredReviews.map((review, index) => (
                 <div
                   key={index}
                   className="bg-gray-50 p-6 rounded-lg shadow mb-4 flex"
@@ -191,19 +285,19 @@ export default function ProfessorPage({ params: { id } }) {
                   {/* Quality and Difficulty Ratings */}
                   <div className="flex-shrink-0 text-center mr-6">
                     <div className="bg-green-200 p-4 rounded-lg mb-2">
-                      <p className="text-lg font-bold text-green-600">QUALITY</p>
+                      <p className="text-lg font-bold text-green-600">
+                        QUALITY
+                      </p>
                       <p className="text-2xl font-bold text-black">
-                        {review.rating
-                          ? review.rating.toFixed(1)
-                          : "N/A"}
+                        {review.rating ? review.rating.toFixed(1) : ""}
                       </p>
                     </div>
                     <div className="bg-red-200 p-4 rounded-lg">
-                      <p className="text-lg font-bold text-red-600">DIFFICULTY</p>
+                      <p className="text-lg font-bold text-red-600">
+                        DIFFICULTY
+                      </p>
                       <p className="text-2xl font-bold text-black">
-                        {review.difficulty
-                          ? review.difficulty.toFixed(1)
-                          : "N/A"}
+                        {review.difficulty ? review.difficulty.toFixed(1) : ""}
                       </p>
                     </div>
                   </div>
@@ -211,7 +305,8 @@ export default function ProfessorPage({ params: { id } }) {
                   {/* Course and Review Details */}
                   <div className="flex-grow">
                     <p className="text-lg font-bold text-black">
-                      {courses[review.course_id]?.course_code || "Unknown Course"}
+                      {courses[review.course_id]?.course_code ||
+                        "Unknown Course"}
                     </p>
                     <p className="text-sm text-black">
                       For Credit:{" "}
@@ -224,30 +319,31 @@ export default function ProfessorPage({ params: { id } }) {
                       </span>
                       {"  "}Grade:{" "}
                       <span className="font-bold text-black">
-                        {review.grade_received || "A"}
+                        {review.grade_received || ""}
                       </span>{" "}
                       Textbook:{" "}
                       <span className="font-bold text-black">
-                        {review.textbook_required ? "Yes" : "N/A"}
+                        {review.textbook_required ? "Yes" : "No"}
                       </span>
                     </p>
                     <p className="text-sm text-black">
-                      {formatDate(review.created_at) || "Jul 23rd, 2024"} {/* Placeholder date */}
+                      {formatDate(review.created_at) || ""}
                     </p>
                     <p className="mt-2 text-black">
-                      {review.text_review ||
-                        "Professor Delgado is very chill. Attendance is taken at the beginning but the lectures were mostly reading off PowerPoints. Apart from that, it's 3 lengthy individual assignments that must be in MLA format and 3 lengthy & bulky group projects. But in the end, the midterm and final are open book."}
+                      {review.text_review || ""}
                     </p>
                     <div className="mt-2 flex flex-wrap space-x-2">
-                      {["GROUP PROJECTS", "LOTS OF HOMEWORK", "GRADED BY FEW THINGS"].map(
-                        (tag, tagIndex) => (
+                      {Array.isArray(review.tags) && review.tags.length > 0 ? (
+                        review.tags.map((tag, tagIndex) => (
                           <span
                             key={tagIndex}
                             className="bg-gray-200 text-gray-800 px-2 py-1 rounded-lg"
                           >
                             {tag}
                           </span>
-                        )
+                        ))
+                      ) : (
+                        <span className="text-gray-600">No tags available</span>
                       )}
                     </div>
                   </div>
@@ -256,17 +352,42 @@ export default function ProfessorPage({ params: { id } }) {
                   <div className="flex-shrink-0 flex flex-col items-center justify-between">
                     <div className="flex items-center space-x-1">
                       <p className="text-sm text-black">Helpful</p>
-                      <button className="text-gray-600 hover:text-black">
-                        <i className="fas fa-thumbs-up"></i>
+                      <button
+                        style={{
+                          backgroundColor: "transparent",
+                          padding: 5,
+                          margin: 0,
+                          border: 0,
+                        }}
+                        className="text-gray-600 hover:text-black text-xl"
+                      >
+                        <i className="fa-regular fa-thumbs-up text-gray-600 hover:text-black"></i>
                       </button>
+
                       <span className="text-sm text-black">0</span>
-                      <button className="text-gray-600 hover:text-black">
-                        <i className="fas fa-thumbs-down"></i>
+                      <button
+                        style={{
+                          backgroundColor: "transparent",
+                          padding: 5,
+                          margin: 0,
+                          border: 0,
+                        }}
+                        className="text-gray-600 hover:text-black text-xl"
+                      >
+                        <i className="fa-regular fa-thumbs-down text-gray-600 hover:text-black"></i>
                       </button>
                       <span className="text-sm text-black">0</span>
                     </div>
-                    <button className="text-gray-600 hover:text-black mt-2">
-                      <i className="fas fa-bookmark"></i>
+                    <button
+                      style={{
+                        backgroundColor: "transparent",
+                        padding: 5,
+                        margin: 0,
+                        border: 0,
+                      }}
+                      className="text-gray-600 hover:text-black text-xl"
+                    >
+                      <i className="fa-regular fa-bookmark text-gray-600 hover:text-black"></i>
                     </button>
                   </div>
                 </div>

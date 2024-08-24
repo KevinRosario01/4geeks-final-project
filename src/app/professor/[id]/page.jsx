@@ -240,7 +240,7 @@ export default function ProfessorPage({ params: { id } }) {
           <div className="flex justify-between items-center mt-6">
             <button
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              onClick={() => router.push(`/add/professor-raiting/${id}`)} // Updated to navigate to the rating page
+              onClick={() => router.push(`/add/professor-rating/${id}`)} // Updated to navigate to the rating page
             >
               Rate
             </button>

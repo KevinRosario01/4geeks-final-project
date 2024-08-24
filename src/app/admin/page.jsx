@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -23,6 +23,11 @@ export default function AdminDashboard() {
     setSelectedOption(option);
     fetchData(option === "Schools" ? "universities" : option.toLowerCase());
   };
+
+  // Fetch the data for the default selection when the component mounts
+  useEffect(() => {
+    fetchData(selectedOption.toLowerCase());
+  }, [selectedOption]);
 
   return (
     <div className="flex flex-col min-h-screen">

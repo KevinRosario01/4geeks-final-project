@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -11,6 +11,7 @@ export default function SchoolSearchResults() {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchSchools = async () => {
@@ -63,6 +64,15 @@ export default function SchoolSearchResults() {
               )}
             </>
           )}
+          <div className="mt-8 text-center">
+            <p className="text-lg text-gray-700">Don't see the school you're looking for?</p>
+            <button
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              onClick={() => router.push('/add/school')}
+            >
+              Add a School
+            </button>
+          </div>
         </div>
       </main>
 

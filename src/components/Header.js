@@ -59,7 +59,7 @@ export default function Header() {
     <header className="bg-blue-900 text-white">
       <div className="container mx-auto flex items-center justify-between p-4">
         <a href="/" className="text-2xl font-bold">
-          RateMyProfessor
+          RateMyProfessor Clone
         </a>
         <div className="flex space-x-4 items-center">
           {user ? (

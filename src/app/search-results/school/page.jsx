@@ -10,7 +10,6 @@ const supabase = createClient();
 export default function SchoolSearchResults() {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @next/next/missing-suspense-with-csr-bailout
   const searchParams = useSearchParams();
   const router = useRouter();
 

@@ -12,7 +12,6 @@ export default function ProfessorSearchResults() {
   const [professors, setProfessors] = useState([]);
   const [universityName, setUniversityName] = useState("");
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @next/next/missing-suspense-with-csr-bailout
   const searchParams = useSearchParams();
   const router = useRouter();
 

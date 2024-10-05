@@ -3,12 +3,17 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 
 const supabase = createClient();
 
-export default function AdminDashboard() {
-  const [selectedOption, setSelectedOption] = useState("Users");
+export default function AdminDashboard({params : {tab}}) {
+  const selectedOption = tab;
   const [data, setData] = useState([]);
+const router = useRouter();
+
 
   const fetchData = async (table) => {
     const { data, error } = await supabase.from(table).select("*");
@@ -17,11 +22,6 @@ export default function AdminDashboard() {
     } else {
       setData(data);
     }
-  };
-
-  const handleMenuClick = (option) => {
-    setSelectedOption(option);
-    fetchData(option === "Schools" ? "universities" : option.toLowerCase());
   };
 
   // Fetch the data for the default selection when the component mounts
@@ -46,9 +46,9 @@ export default function AdminDashboard() {
                     ? "bg-blue-500 text-white"
                     : "text-black hover:bg-gray-300"
                 }`}
-                onClick={() => handleMenuClick(option)}
+                
               >
-                {option}
+              <Link href={`/admin/${option}`}>{option}</Link>
               </li>
             ))}
           </ul>
